@@ -1,0 +1,317 @@
+---
+title: "Linear Regression"
+author: "Maryam moheb"
+date: "September 15, 2018"
+
+output: html_notebook
+---
+
+## 2.1 Problem 1
+### 2.1.a
+```{r}
+setwd("D:/DataMiningProject")
+college.df <- read.csv('College.csv')
+head(college.df)
+```
+## 2.1 Problem 1
+### 2.1.b
+
+```{r}
+private_num <- college.df[,2]
+private_num
+as.data.frame(table(private_num))
+```
+## 2.1 Problem 1
+### 2.1.c
+```{r}
+library(dplyr)
+
+private_college <- filter(college.df, Private == "Yes")
+
+plot(hist(private_college$PhD), freq = F ,main="PhD holder in private colleges", xlab="PhD", col = c("blue", "red", "gray", "green"))
+
+lines(density(private_college$PhD))
+```
+```{r}
+library(dplyr)
+
+public_college <- filter(college.df, Private == "No")
+
+plot(hist(public_college$PhD), freq = F ,main="PhD holder in public colleges", xlab="PhD", col = c("blue", "red", "gray", "green"))
+
+lines(density(public_college$PhD))
+```
+##### In first histogram there is a sample of 565 private colleges, PhD faculty between 50 and 100 were quite frequent.The histogram is slightly skewed to the left but it is reasonable.Also, it is top heavy because of more mass under line
+##### In second histogram, PhD faculty in public colleges between 70 and 90 were quite frequent. For this sample of 212 public colleges, the smallest number of PhD holders  was less than 40 and the largest greater than 100.Finally, the histogram is skewed to the left Which shows it is not symmetric and the mean less than median.
+
+## 2.1 Problem 1
+### 2.1.d
+```{r}
+sort_college <- college.df %>% arrange(desc(Grad.Rate))
+sort_college
+```
+```{r}
+college_name_gradRate <- sort_college %>% select(Name,Grad.Rate)
+ 
+head(college_name_gradRate, n=5) 
+```
+```{r}
+sort_college <- college.df %>% arrange(Grad.Rate)
+college_name_gradRate <- sort_college %>% select(Name,Grad.Rate)
+head(college_name_gradRate, n=5)
+```
+# 2.1 Problem 1
+## 2.1.e
+###i
+```{r}
+summary(college.df)
+```
+# 2.1 Problem 1
+## 2.1.e
+###ii
+```{r}
+pairs(college[,1:10])
+```
+# 2.1 Problem 1
+## 2.1.e
+###iii
+```{r}
+boxplot(perc.alumni~Private=="Yes",
+data=college.df,
+main="Different boxplots for Private or public school",
+xlab="Private",
+ylab="Perc of Alumni",
+col="blue",
+border="red"
+)
+```
+##### percent of alumni which go to private school donate more than alumni of public school.
+
+# 2.1 Problem 1
+## 2.1.e
+###iv
+```{r}
+boxplot(PhD~Private=="Yes",
+data=college.df,
+main="Different boxplots for PhD employment in Private or public school",
+xlab="Private",
+ylab="PhD",
+col="brown",
+border="orange"
+)
+```
+##### As you see in above boxplot public school has a higher PhD employment rather than private school.
+
+# 2.1 Problem 1
+## 2.1.e
+###v
+```{r}
+Elite <- rep("No", nrow(college.df))
+Elite[college.df$Top10perc > 50] <- "Yes"
+Elite <- as.factor(Elite)
+college.df <- data.frame(college.df, Elite)
+summary(college.df)
+```
+# 2.1 Problem 1
+## 2.1.e
+###vi
+```{r}
+par(mfrow = c(2,2))
+hist(college.df$Grad.Rate)
+hist(college.df$Accept)
+hist(college.df$Enroll)
+hist(college.df$perc.alumni)
+```
+# 2.1 Problem 1
+## 2.1.e
+###vii
+```{r}
+par(mfrow = c(2,2))
+plot(hist(college.df$Grad.Rate), freq = F ,main="college.df$Grad.Rate", xlab="Grad.Rate", col = c("blue", "red", "gray", "green"))
+lines(density(college.df$Grad.Rate))
+plot(hist(college.df$Accept), freq = F ,main="college.df$Accept", xlab="Accept", col = c("blue", "red", "gray", "green"))
+lines(density(college.df$Accept))
+```
+
+# 2.2 Linear regression 
+##  2.2.a
+### i-part 1
+```{r}
+setwd("D:/DataMiningProject")
+auto.df <- read.csv('auto-mpg.csv')
+indx <- which(auto.df $ horsepower == "?")
+indx
+```
+# 2.2 Linear regression 
+##  2.2.a
+### i-part 2
+```{r}
+auto.df <- auto.df[-indx,]
+str(auto.df)
+```
+#   2.2 Linear regression 
+##  2.2.a
+### ii
+```{r}
+auto.df[,c("horsepower")] <- as.integer(auto.df[,c("horsepower")])
+str(auto.df)
+```
+## 2.2 Linear regression 
+###  2.2.b
+```{r}
+library(psych)
+pairs.panels(auto.df[,c("mpg","weight","displacement", "acceleration", "horsepower","cylinders","model.year","origin","car.name")])
+```
+```{r}
+model <- lm(mpg ~ weight, data = auto.df)
+model
+summary(model)
+```
+##### how well the model fits the data by studying the R2 , RSE and RMSE.
+
+#####Multiple R-squared:  0.6926: It shows the proportion of variation in the dependent (response) variable. The more variance the better model. 
+
+#####RMSE :As you see in below rmse very close to RSE and RMSE is low and R-squared is high and it is a good model.
+```{r}
+mse <- mean(residuals(model)^2)
+rmse <- sqrt(mse)
+rmse
+```
+#####Residual standard error: 4.333,  we want to keep RSE as much as possible low and as you see in below plot gives pretty good fit to data and the line through the center of scatter, so it is not bad. 
+```{r}
+plot(auto.df$weight, auto.df$mpg)
+abline(model)
+```
+## 2.2 Linear regression 
+###  2.2.c
+```{r}
+plot(mpg~weight, data = auto.df, xlab = "Weight", ylab = "Mpg", 
+     main = "Mpg VS Weight Plot", pch = 16, cex =1, col = "blue")
+abline(46.216525,-0.007647,col ="red", lwd = 3)
+```
+## 2.2 Linear regression 
+###  2.2.d
+```{r}
+set.seed(1122)
+index <- sample(1:nrow(auto.df), 0.80*dim(auto.df)[1])
+train.df <- auto.df[index, ]
+test.df <- auto.df[-index, ]
+```
+# 2.2 Linear regression 
+##  2.2.d
+###i
+#####Why is using car.name as a predictor not a reasonable option?  As you see in Question 2.2.b, the corelation between mpg and car.name is %27 which means it is not a good predictor. Another thing came to my mind is car.name is like unique id for this data set.
+
+# 2.2 Linear regression 
+##  2.2.d 
+###ii
+```{r}
+model2 <- lm(mpg ~ weight + cylinders + acceleration + displacement + model.year + horsepower + origin, data = train.df)
+summary(model2)
+```
+#####Residual standard error: 3.188,It shows how far observed mpg or y values from our predicted or fitted mpg. Also, we have R^2 = SSR/SST and higher R-squared means lower RSE, which we have here.
+#####Multiple R-squared: 0.83. It shows the proportion of variation in the dependent (response) variable. The more variance the better model. 
+#####Higher R-squared is better(0.83 > 0.70) 
+#####RMSE = 3.147, As you see in below rmse very close to RSE and RMSE is low and R-squared is high and it is a good model.
+
+```{r}
+mse <- mean(residuals(model2)^2)
+rmse <- sqrt(mse)
+rmse
+```
+## 2.2 Linear regression 
+##  2.2.e 
+###i
+```{r}
+step(model2, direction = "backward")
+model4 <- lm(mpg ~ weight + model.year + origin, data = train.df)
+```
+#####The p-Values are very important because, a linear model statistically significant only when these p-Values are less than the significance level, which is 0.05. This is  interpreted by the significance stars at the end of the row. The more the stars , the more significant the variable.That 's why I am going to choose weight, model.year and origin as predictors and ignore other variables.
+
+# 2.2 Linear regression 
+##  2.2.e 
+###ii
+```{r}
+summary(model4)
+```
+#####Residual standard error: 3.24, we want to keep our Residual standard error as much as possible low.It shows how far observed mpg or y values from our predicted or fitted mpg. Also, we have R^2 = SSR/SST and higher R-squared means lower RSE, which we have here.
+#####Multiple R-squared: 0.83. It shows the proportion of variation in the dependent (response) variable. The more variance the better model. 
+#####Higher R-squared is better(0.83 > 0.70) 
+#####RMSE = 3.21, As you see in below rmse very close to RSE and RMSE is low and R-squared is high and it is a good model.
+```{r}
+mse <- mean(residuals(model4)^2)
+rmse <- sqrt(mse)
+rmse
+```
+## 2.2 Linear regression 
+###  2.2.f
+```{r}
+plot(model4, 1)
+```
+##### The distance from the line at 0 is how bad the prediction is for each value.Since 
+##### Residual = Observed - Predicted
+#####positive values for the residual mean the prediction was too low, and negative values mean the prediction was too high; 0 means the guess is correct.
+
+## 2.2 Linear regression 
+###  2.2.g
+```{r}
+g = model4$residuals
+m <- mean(g)
+std <- sqrt(var(g))
+hist(g, density = 20, breaks = 20, prob = TRUE,
+     xlab  = "Model Residuals",
+     main = "Auto Residuals Histogram")
+curve(dnorm(x, mean = m, sd =std),
+      col ="blue", lwd = 2, add = TRUE, yaxt = "n")    
+```
+#####  Does the histogram follow a Gaussian distribution?
+#####As you see the histogram mostly matches the normal distribution, the residuals are normally distributed. this gives us an indication of how well our sample can predict a normal distribution.
+
+## 2.2 Linear regression 
+###  2.2.h
+```{r}
+model_prediction<- predict(model4, data = test.df)
+df.model <- data.frame(model4$fitted.values)
+df.model <- data.frame(model4$fitted.values, model_prediction)
+View(df.model)
+library(dplyr)
+df.model <- df.model %>% mutate(ifelse(model4.fitted.values == model_prediction, "match", "unmatched"))
+View(df.model)
+# Number of match and unmatch
+match_num <- df.model[,3]
+as.data.frame(table(match_num))
+```
+## 2.2 Linear regression 
+###  2.2.i
+```{r}
+pred_test <- data.frame(pred = predict(model4, test.df),act = test.df$mpg)
+                            
+# calculate base on residual vector
+result <- data.frame(RSS = sum((pred_test$pred - pred_test$act)^2),
+                   TSS = sum((pred_test$act - mean(pred_test$act))^2))
+result$F <- (result$TSS - result$RSS) / 3 / (result$RSS / (nrow(test.df) - 3 - 1))
+result$MSE <- result$RSS / nrow(test.df)
+result$RMSE <- sqrt(result$MSE)
+result
+result$F
+result$MSE
+result$RMSE
+
+
+#####Higher R-squared is better(77.46 > 0.70) 
+#####RMSE = 3.75, and since R-squared is high and RMSE is low the model is pretty good.
+```
+
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+
+Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Ctrl+Shift+Enter*. 
+
+```{r}
+plot(cars)
+```
+
+Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Ctrl+Alt+I*.
+
+When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Ctrl+Shift+K* to preview the HTML file).
+
+The preview shows you a rendered HTML copy of the contents of the editor. Consequently, unlike *Knit*, *Preview* does not run any R code chunks. Instead, the output of the chunk when it was last run in the editor is displayed.

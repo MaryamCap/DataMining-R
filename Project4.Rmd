@@ -1,0 +1,301 @@
+---
+Author: Maryam Heidarimoheb
+title: "R Notebook"
+output: html_notebook
+
+---
+
+```{r}
+library(textreuse)
+library(tm)
+library(stringr)
+
+
+files <- list.files("project4.movies", full.names=T)
+
+
+corpus1 <- TextReuseCorpus(files, tokenizer = tokenize_ngrams, n = 5, keep_tokens = TRUE)
+
+
+```
+##### 2.1.A):
+
+```{r}
+shingle.list <- tokens(corpus1[[1]])
+#shingle.list
+for(i in 1:length(corpus1)){
+  doc <- corpus1[[i]]
+  shingle.list <- c(shingle.list, tokens(doc))
+}
+length(unique(shingle.list))
+length(names(corpus1))
+```
+#####Rows : 158052
+#####cols : 671
+
+
+
+##### 2.1.B):
+```{r}
+d <- corpus1[["user 20 "]]
+d
+```
+
+##### 2.1.B.I):
+```{r}
+str_count(d$content,"\\([:digit:]{4}\\)")
+```
+
+
+##### 2.1.B.II):
+```{r}
+tokens(d)[1:5]
+```
+
+```{r}
+res <- pairwise_candidates(pairwise_compare(corpus1, jaccard_similarity))
+```
+
+##### 2.1.C.I):
+
+```{r}
+length(which(res$score>= 0.6))
+```
+##### 2.1.C.II):
+```{r}
+length(which(res$score>= 0.5))
+```
+##### 2.1.C.III):
+```{r}
+length(which(res$score>= 0.4))
+```
+##### 2.1.C.IV):
+```{r}
+res[c(which(res$score>= 0.4)),]
+```
+##### 2.1.D.I):
+```{r}
+lsh_probability(h=20,  b=10, s=0.60)
+```
+
+```{r}
+minhash <- minhash_generator(n=20, seed=100)
+
+corpus2 <- TextReuseCorpus(files, tokenizer = tokenize_ngrams, n = 5,
+                          minhash_func = minhash, keep_tokens = TRUE)
+```
+##### 2.1.D.II):
+```{r}
+minhashes(corpus2[["user 20 "]])[1:5]
+
+```
+
+##### 2.1.E)
+```{r}
+buckets <- lsh(corpus2, bands = 10)
+candidates <- lsh_candidates(buckets)
+res_1 <- lsh_compare(candidates, corpus2, jaccard_similarity)
+```
+##### 2.1.E.I):Do you expect to find candidate pairs that have a Jaccard similarity between 0.60 and 0.50?If yes, how many such candidate pairs exist? If no, why do you not expect to find such candidate pairs? No,the signatures must be preserve the Jaccard similarity of the original set of shingles.
+
+```{r}
+length(which(res_1$score>= 0.6))
+```
+
+
+```{r}
+length(which(res_1$score>= 0.5))
+```
+
+
+```{r}
+length(which(res_1$score>= 0.4))
+```
+
+##### 2.1.E.II):
+```{r}
+res_1[c(which(res_1$score>= 0.4)),]
+```
+##### 2.1.E.III:Are they the same as the ones found in (c)(iv) above? Yes
+
+
+##### 2.1.E.IV:Compared to the number of comparisons in (c), how much work was saved by LSH (in percentage terms)? 113500/224785= 0.50, near 0.50 LSH saved work
+
+
+
+
+##### 2.2
+
+```{r}
+library(dplyr)
+#d <- corpus1[['user 364 ']]
+#watched_movies <- strsplit(d$content, "\n")
+#watched_movies
+movie_file <- read.csv("movies.csv", header = T, sep = ",")
+user_file <- read.csv("ratings.csv", header = T, sep = ",")
+select(filter(user_file, userId == 364), movieId)
+
+for(i in 1: length(watched_movies[[1]])){
+  movie_names <- watched_movies[[1]][i]
+  index <- which(watched_movies[[1]][i]== movie_file$title)
+  print(index)
+  movie_info <- movie_file[index, ]
+  movie_genres <- movie_info['genres']
+  #print(movie_genres)
+}
+```
+
+```{r}
+watched_movies<-select(filter(user_file, userId == 364), movieId)
+
+#selected_idex <- sample(nrow(watched_movies),10)
+watched_movies
+```
+
+```{r}
+for (i in 1:nrow(watched_movies)){
+genres_movies<-select(filter(movie_file, movieId==watched_movies[i,]), genres)
+print(genres_movies)
+
+}
+
+
+```
+```{r}
+library(stringr)
+column.name <- c( "Action", "Adventure", "Animation", "Children", "Comedy", "Crime", "Documentary", "Drama", "Fantasy", "Film-Noir", "Horror", "IMAX", "Musical", "Mystery", "Romance", "Sci-Fi", "Thriller", "War", "Western", "(no genres listed)")
+data.df <- data.frame(matrix(nrow=0, ncol=20))
+colnames(data.df) <- column.name
+for (i in 1:nrow(watched_movies)){
+genres_movies<-select(filter(movie_file, movieId==watched_movies[i,]), genres)
+genres_movies<-as.character(genres_movies$genres)
+genre<-strsplit(genres_movies, split = "\\|")
+print(length(genre[[1]]))
+temp.df <- data.frame(matrix(rep(0,20), nrow = 1, ncol = 20))
+ colnames(temp.df)<- column.name
+  for(i in 1: length(genre[[1]])){
+    temp.df[genre[[1]][i]]<- 1
+  }
+  data.df <- rbind(data.df, temp.df)
+}
+data.df <-rbind(data.df, colMeans(data.df))
+
+```
+
+
+
+```{r}
+
+
+
+library(stringr)
+column.name <- c( "movieId","Action", "Adventure", "Animation", "Children", "Comedy", "Crime", "Documentary", "Drama", "Fantasy", "Film-Noir", "Horror", "IMAX", "Musical", "Mystery", "Romance", "Sci-Fi", "Thriller", "War", "Western", "(no genres listed)")
+movie_data.df <- data.frame(matrix(nrow=0, ncol=21))
+colnames(movie_data.df) <- column.name
+#genres_movies_new<-select(filter(movie_file, movieId==watched_movies[1,10]), genres)
+movie_index <- sample(nrow(movie_file), 10)
+for (i in 1:10){
+genres_movies<-select(filter(movie_file, movieId==watched_movies[i,]), genres)
+genres_movies<-as.character(genres_movies$genres)
+genre<-strsplit(genres_movies, split = "\\|")
+print(length(genre[[1]]))
+movie_temp.df <- data.frame(matrix(rep(0,21), nrow = 1, ncol = 21))
+movie_temp.df[,1]<-watched_movies[i,]
+ colnames(movie_temp.df)<- column.name
+  for(i in 1: length(genre[[1]])){
+    movie_temp.df[genre[[1]][i]]<- 1
+  }
+  movie_data.df <- rbind(movie_data.df, movie_temp.df)
+}
+movie_data.df
+
+```
+
+```{r}
+library(lsa)
+colname<-c("movieId", "Title","Cos")
+result_data.df <- data.frame(matrix(nrow=0, ncol=3))
+colnames(result_data.df) <- colname
+for (i in  1:10) {
+  movie_row.df <- data.frame(matrix(rep(0,3), nrow = 1, ncol = 3))
+  colnames(movie_row.df)<-colname
+  
+  movieId<-movie_data.df[i,1]
+  title_movies<-select(filter(movie_file, movieId==movie_data.df[i,1]), title)
+  cosine_result<- cosine(unlist(data.df[37,]), unlist(movie_data.df[i,2:21]) )
+  movie_row.df[,3]<- cosine_result
+  movie_row.df[,1]<-movieId
+  movie_row.df[,2]<-title_movies
+result_data.df <- rbind(result_data.df, movie_row.df)
+}
+result_data.df
+
+```
+```{r}
+head(result_data.df[order(-result_data.df[,3]),],5)
+```
+
+
+#####2.3
+```{r}
+library(methods)
+library(recommenderlab)
+library(data.table)
+library(ggplot2)
+library(dplyr)
+	 	 
+# Loading  data	
+movie_file_new <- read.csv("movies.csv", header = T, sep = ",")
+user_file_new <- read.csv("ratings.csv", header = T, sep = ",")
+select(filter(user_file_new, userId == 191), movieId)
+
+rating.matrix<- as(user_file_new,"realRatingMatrix")
+rating.matrix
+# Creation of the model - U(ser) B(ased) C(ollaborative) F(iltering)
+Rec.model<-Recommender(rating.matrix[1:174], method = "UBCF",
+
+      param=list(normalize = "Z-score",method="Cosine",nn=5, minRating=1))
+# recommended top 5 items for user u191
+recommended.items.u191 <- predict(Rec.model, rating.matrix["user 191 ",], n=5)
+# to display them
+as(recommended.items.u191, "list")
+# to obtain the top 5
+recommended.items.u191.top5 <- bestN(recommended.items.u191, n = 5)
+# to display them
+as(recommended.items.u191.top5, "list")
+
+predicted.u191 <- predict(Rec.model, rating.matrix["u191",], type="ratings")
+
+as(predicted.u191, "list")
+
+as(rating.matrix["u191",], "list")
+
+e <- evaluationScheme(rating.matrix[1:100], method="split", train=0.9, given=15)
+
+Rec.ubcf <- Recommender(getData(e, "train"), "UBCF")
+
+Rec.ibcf <- Recommender(getData(e, "train"), "IBCF")
+
+p.ubcf <- predict(Rec.ubcf, getData(e, "known"), type="ratings")
+
+p.ibcf <- predict(Rec.ibcf, getData(e, "known"), type="ratings")
+
+error.ubcf<-calcPredictionAccuracy(p.ubcf, getData(e, "unknown"))
+error.ibcf<-calcPredictionAccuracy(p.ibcf, getData(e, "unknown"))
+error <- rbind(error.ubcf,error.ibcf)
+rownames(error) <- c("UBCF","IBCF")
+```
+
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+
+Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Ctrl+Shift+Enter*. 
+
+```{r}
+plot(cars)
+```
+
+Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Ctrl+Alt+I*.
+
+When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Ctrl+Shift+K* to preview the HTML file).
+
+The preview shows you a rendered HTML copy of the contents of the editor. Consequently, unlike *Knit*, *Preview* does not run any R code chunks. Instead, the output of the chunk when it was last run in the editor is displayed.

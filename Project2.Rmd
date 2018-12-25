@@ -1,0 +1,450 @@
+---
+author: "Maryam Heidarimoheb"
+date: "September 23, 2018"
+output: html_notebook
+---
+
+##  Problem 2
+### Part 2.1-A
+```{r}
+
+
+setwd("D:/DataMiningProject")
+set.seed(1122)
+adultTrain.df <- read.csv('adult-train.csv')
+#View(adultTrain.df)
+sum(adultTrain.df$age == '?')
+sum(adultTrain.df$workclass == '?')
+sum(adultTrain.df$fnlwgt == '?')
+sum(adultTrain.df$education == '?')
+sum(adultTrain.df$education_num == '?')
+sum(adultTrain.df$marital_status == '?')
+sum(adultTrain.df$occupation == '?')
+sum(adultTrain.df$relationship == '?')
+sum(adultTrain.df$race == '?')
+sum(adultTrain.df$sex == '?')
+sum(adultTrain.df$capital_gain == '?')
+sum(adultTrain.df$capital_loss == '?')
+sum(adultTrain.df$hours_per_week == '?')
+sum(adultTrain.df$native_country == '?')
+sum(adultTrain.df$income == '?')
+
+```
+```{r}
+indx <- which(adultTrain.df $ workclass == "?" )
+#indx
+adultTrain.df <- adultTrain.df[-indx,]
+#str(adultTrain.df)
+```
+```{r}
+indx <- which(adultTrain.df $ occupation == "?" )
+#indx
+adultTrain.df <- adultTrain.df[-indx,]
+#str(adultTrain.df)
+```
+```{r}
+indx <- which(adultTrain.df $ native_country == "?" )
+indx
+adultTrain.df <- adultTrain.df[-indx,]
+str(adultTrain.df)
+
+```
+```{r}
+### Cleaning Test Data Set
+
+setwd("D:/DataMiningProject")
+set.seed(1122)
+adultTest.df <- read.csv('adult-test.csv')
+#View(adultTest.df)
+sum(adultTest.df$age == '?')
+sum(adultTest.df$workclass == '?')
+sum(adultTest.df$fnlwgt == '?')
+sum(adultTest.df$education == '?')
+sum(adultTest.df$education_num == '?')
+sum(adultTest.df$marital_status == '?')
+sum(adultTest.df$occupation == '?')
+sum(adultTest.df$relationship == '?')
+sum(adultTest.df$race == '?')
+sum(adultTest.df$sex == '?')
+sum(adultTest.df$capital_gain == '?')
+sum(adultTest.df$capital_loss == '?')
+sum(adultTest.df$hours_per_week == '?')
+sum(adultTest.df$native_country == '?')
+sum(adultTest.df$income == '?')
+```
+```{r}
+indx <- which(adultTest.df $ workclass == "?" )
+#indx
+adultTest.df <- adultTest.df[-indx,]
+#str(adultTest.df)
+```
+```{r}
+indx <- which(adultTest.df $ occupation == "?" )
+#indx
+adultTest.df <- adultTest.df[-indx,]
+#str(adultTest.df)
+```
+```{r}
+indx <- which(adultTest.df $ native_country == "?" )
+indx
+adultTest.df <- adultTest.df[-indx,]
+str(adultTest.df)
+```
+```{r}
+##  Problem 2
+### Part 2.1-B
+
+#### Build the decision tree model using all predictor variables.
+#### Visualize the decision tree
+library(rpart)
+library(rpart.plot)
+library(caret)
+library(lattice)
+library(ggplot2)
+model <- rpart(income~ ., method = "class", data = adultTrain.df)
+rpart.plot(model, extra=104, fallen.leaves = T, type=4, main="Rpart on income data (Full Tree)")
+summary(model)
+```
+##  Problem 2
+### Part 2.1-B-i
+##### The top three important predictors in the model are relationship, marital_status, capital_gain
+
+##  Problem 2
+### Part 2.1-B-ii
+##### THe first split is on relationship predictor. The predicted class of the first node is income and the root node, at the top, shows, 75% of people have less than 50K income, while 25% have more than 50k income. 
+
+
+##  Problem 2
+##### Now, let's run predictions using the fitted model.We use the fitted model on this test dataset to see how well the model works.
+```{r}
+pred <- predict(model, adultTest.df, type = "class")
+confusionMatrix(pred, as.factor(adultTest.df[, 15]))
+
+```
+##  Problem 2
+### Part 2.1-C-i
+##### If we have equal of both class, Accuracy and balanced Accuracy are close to each other. But here we have to look at balanced Accuracy brcause our distribution is uneven. and Balanced Accuracy : 0.725. if we want to calculate manually the average of sensitivity and specificity is Balanced Accuracy : (0.948 +0.503)/2 = 0.725 
+
+##  Problem 2
+### Part 2.1-C-ii
+##### Balanced error rate = 1.0 - balanced accuracy = 1- 0.725 = 0.275
+
+##  Problem 2
+### Part 2.1-C-iii
+##### Sensitivity : 0.948 , we can calculate TPR(sensitivity)= TP/TP+FN which is all actuall positive observations in the test data set         
+##### Specificity : 0.504, we can calculate TNR(Specificity)= TN/TN+FP which is all actuall negative observations in the test data set 
+
+
+##  Problem 2
+### Part 2.1-C-iv
+#### Here is the ROC curve for the test data. 
+```{r}
+# ROC curve
+pred.rocr <- predict(model, newdata=adultTest.df, type="prob")[,2]
+f.pred <- prediction(pred.rocr, adultTest.df$income)
+f.perf <- performance(f.pred, "tpr", "fpr")
+plot(f.perf, colorize=T, lwd=3)
+abline(0,1)
+auc <- performance(f.pred, measure = "auc")
+cat(paste("The area under curve (AUC) for this model is ", round(auc@y.values[[1]], 3)))
+```
+##### The area under curve (AUC) for this model is  0.843, The curve that shows the greater area under the curve its the best identifier because the area under diagonal is useless.
+
+##  Problem 2
+### Part 2.1-D
+```{r}
+options("digits"=5)
+printcp(model)
+```
+##### We have to look at the cross validation error to see at which level it starting to increase. As you see it is decreasing from 1.00 to 0.74 and 0.74 to 0.67 and 0.67 to 0.63, So the tree would not benefit from a pruning
+
+
+##  Problem 2
+### Part 2.1-E-i
+```{r}
+income_num <- adultTrain.df[,15]
+as.data.frame(table(income_num))
+```
+
+
+##  Problem 2
+### Part 2.1-E-ii
+```{r}
+income_num_le_50K <- length(which(adultTrain.df$income == "<=50K"))
+income_num_gt_50K <- length(which(adultTrain.df$income ==  ">50K"))
+train1 <- adultTrain.df[which(adultTrain.df$income =="<=50k")]
+train2 <- adultTrain.df[which(adultTrain.df$income ==" >50k")]
+train_eq <- train1[sample(nrow(train1),income_num_gt_50K, replace = F),]
+trainfin <- rbind(train2, train_eq)
+trainfin <- trainfin[sample(nrow(trainfin),nrow(trainfin),replace = F),]
+
+```
+##  Problem 2
+### Part 2.1-E-iii
+```{r}
+library(rpart)
+model2 <- rpart(income ~ ., data = trainfin)
+pred_model2 <- predict(model2, adult_test, type = "class")
+confusionMatrix(pred_model2,as.factor(adult_test$income))
+
+
+```
+##  Problem 2
+### Part 2.1-E-iii
+####i
+####Balanced Accuracy : 0.781  
+
+##  Problem 2
+### Part 2.1-E-iii
+####ii
+
+##### Balanced error rate = 1.0 - balanced accuracy = 1- 0.781 = 0.219  
+
+##  Problem 2
+### Part 2.1-E-iii
+####iii
+##### Sensitivity 0.667        
+##### Specificity 0.896        
+
+##  Problem 2
+### Part 2.1-E-iii
+####iv
+```{r}
+# ROC curve
+
+under.pred.rocr <- predict(model2, newdata=adultTest.df, type="prob")[,2]
+under.pred <- prediction(under.pred.rocr, adultTest.df$income)
+under.perf <- performance(under.pred, "tpr", "fpr")
+plot(under.perf, colorize=T, lwd=3)
+abline(0,1)
+under_auc <- performance(under.pred, measure = "auc")
+cat(paste("The area under curve (AUC) after under sampling ", round(auc@y.values[[1]], 3)))
+```
+#### ##### The area under curve (AUC) for this model is  0.843, The curve that shows the greater area under the curve its the best identifier because the area under diagonal is useless.
+
+##  Problem 2
+### Part 2.1-F
+
+####Balanced Accuracy : 0.781  but before under sampling Balanced Accuracy : 0.725 which we have better balanced accuracy after under sampling.
+
+
+##### Balanced error rate before under sampling= 1.0 - balanced accuracy = 1- 0.725 = 0.275
+##### Balanced error rate after under sampling= 1.0 - balanced accuracy = 1- 0.781 = 0.219  which is lower than Balanced error rate before under sampling
+####ppv = tp/(tp+fp)  =>for   c and e
+
+##### Sensitivity before under sampling: 0.948 , we can calculate TPR(sensitivity)= TP/TP+FN which is all actuall positive observations in the test data set, but after under sampling is 0.667 which is decrasing in actuall positive observations        
+##### Specificity before under sampling: 0.504, we can calculate TNR(Specificity)= TN/TN+FP which is all actuall negative observations in the test data set , but after under sampling is 0.896 which is increasing in actuall negative observations.       
+
+#####The area under curve (AUC) for both model is  0.843, The curve that shows the greater area under the curve its the best identifier because the area under diagonal is useless.
+
+
+##  Problem 2
+### Part 2.2-A
+```{r}
+set.seed(1122)
+adultTrain.df <- read.csv('adult-train.csv')
+indx <- which(adultTrain.df $ workclass == "?" )
+adultTrain.df <- adultTrain.df[-indx,]
+indx <- which(adultTrain.df $ occupation == "?" )
+adultTrain.df <- adultTrain.df[-indx,]
+indx <- which(adultTrain.df $ native_country == "?" )
+adultTrain.df <- adultTrain.df[-indx,]
+str(adultTrain.df)
+
+set.seed(1122)
+adultTest.df <- read.csv('adult-test.csv')
+indx <- which(adultTest.df $ workclass == "?" )
+adultTest.df <- adultTest.df[-indx,]
+indx <- which(adultTest.df $ occupation == "?" )
+adultTest.df <- adultTest.df[-indx,]
+indx <- which(adultTest.df $ native_country == "?" )
+adultTest.df <- adultTest.df[-indx,]
+str(adultTest.df)
+
+
+```
+```{r}
+#rm(model, pred)
+library(randomForest)
+RF_model <- randomForest(income ~ ., data=adultTrain.df, importance = TRUE)
+RF_pred <- predict(RF_model, adultTest.df, type="class")
+confusionMatrix(RF_pred, as.factor(adultTest.df$income))
+importance(RF_model)
+```
+##  Problem 2
+### Part 2.2-A-i
+The Balanced Accuracy is :0.782
+
+##  Problem 2
+### Part 2.2-A-ii
+The Accuracy is : 0.858
+
+##  Problem 2
+### Part 2.2-A-iii
+The Sensitivity is: 0.930         
+The Specificity is: 0.634 
+
+##  Problem 2
+### Part 2.2-A-iv
+```{r}
+RF_income_num <- adultTest.df[,15]
+as.data.frame(table(RF_income_num))
+```
+##  Problem 2
+### Part 2.2-A-v
+
+#####If we have equal of both class, Accuracy and balanced Accuracy are close to each other. But here we have to look at balanced Accuracy brcause our distribution is uneven. and Balanced Accuracy : 0.782. if we want to calculate manually the average of sensitivity and specificity is Balanced Accuracy : (0.930 +0.634)/2 = 0.782 
+##### This model has even higher sensitivity, indicating that it is really good at finding TP instances, but at the cost of TN instances.  However, the balanced accuracy is higher here.
+
+##  Problem 2
+### Part 2.1-A-vi
+```{r}
+varImpPlot(RF_model)
+```
+##### MeanDecreaseAccuracy: it measures how much inclusion of this predictor in the model reduces classification error.
+######the most important MeanDecreaseAccuracy variable :capital_gain
+######the least important MeanDecreaseAccuracy variable: fnlwgt 
+#####MeanDecreaseGini : Gini is defined as "inequity" when used in describing a society's distribution of income, or a measure of "node impurity" in tree-based classification. A low Gini means that a particular predictor variable plays a greater role in partitioning the data into the defined classes.
+######the most important MeanDecreaseGini variable : relationship
+######the least important MeanDecreaseGini variable: race
+
+
+
+##  Problem 2
+### Part 2.1-A-vii
+```{r}
+print(RF_model)
+```
+##### 500 trees were created, and log_2(14) +1 ~3 , so about 3 features randomly were selected to do the split. Out of bag error error on test data is %13.77 and class error for income less than 50k is less than class error on income higher than 50k.
+
+##  Problem 2
+### Part 2.2-B
+```{r}
+library(randomForest)
+mtry <- tuneRF(x =adultTrain.df[,c(1:14)], y = adultTrain.df$income,ntreeTry=500,stepFactor=1.5,improve=0.01, trace=T,plot=T)
+print(mtry)
+
+
+```
+###2.2.b.i
+##for calculating reasonable default value we have two ways:
+###1- Log2(number of predictors)+1 = Log2(14)+1 ~ 3.8 +1 ~4.8
+###ceiling (4.8)=5
+###2- Sqrt(number of predictors) =3.74 
+###ceiling (3.7)=4
+### there is margin between 4 and 5 but we can try with both number to see which one has a better accuracy and chose as a default value.
+
+
+###2.2.b.ii
+```{r}
+new_model <- randomForest(income ~ ., data=adultTrain.df, importance = TRUE,mtry=2)
+new_pred <- predict(new_model, adultTest.df, type="class")
+confusionMatrix(new_pred, as.factor(adultTest.df$income))
+```
+### mtry = 2 has a lowest out of bag error 
+
+###2.2.b.iii
+###1)Balanced Accuracy : 0.7824 
+###2)Accuracy : 0.8595
+###3)Sensitivity : 0.9340, Specificity : 0.6308
+###4) varImpPlot(new_model)
+
+```{r}
+varImpPlot(new_model)
+```
+##### MeanDecreaseAccuracy: it measures how much inclusion of this predictor in the model reduces classification error.
+######the most important MeanDecreaseAccuracy variable :capital_gain
+######the least important MeanDecreaseAccuracy variable: fnlwgt 
+
+######the most important MeanDecreaseGini variable : capital_gain
+######the least important MeanDecreaseGini variable: race
+
+##  Problem 2  
+### Part 2.2-B-iv
+
+###The Balanced Accuracy of previous model :0.782 and the new model is Balanced Accuracy : 0.7824, very close to each other
+###The Accuracy  of previous model: 0.858 and the new model is Accuracy :0.8595, very close to each other
+###The Sensitivity  of previous model: 0.858 and the new model is increasing  in expence of specificity:0.9340       
+###The Specificity of previous model: 0.634  the new model is Specificity : 0.6308, very close to each other
+######the most important MeanDecreaseAccuracy variable of previous model is: apital_gain and new modelis :capital_gain
+######the least important MeanDecreaseAccuracy variable of previous model : fnlwgt and new modelis : fnlwgt
+######the most important MeanDecreaseGini variable of previous model: relationship and new model :capital_gain
+######the least important MeanDecreaseGini variable of previous model: race and new model is race
+
+
+
+### problem 2.3
+```{r}
+library(arules)
+library(arulesViz)
+library(viridisLite)
+setwd("D:/DataMiningProject")
+rm(list=ls())
+trans <- read.transactions("groceries.csv", sep=",")
+summary(trans)
+
+
+```
+####2.3.i
+```{r}
+rules <- apriori(trans)
+rm(rules)
+```
+### We get zero rule since our minsup is set too high (0.1)
+
+####2.3.ii
+```{r}
+rules_1 <- apriori(trans, parameter = list(support=0.001))
+summary(rules_1)
+```
+### I set upport=0.001 and I got set of 410 rules 
+
+###(iii) Which item is the most frequently bought and what is its frequency?
+```{r}
+f_is <- apriori(trans, parameter=list(support=0.001, target="frequent itemsets"))
+inspect(sort(f_is, decreasing = T, by="count"))
+
+cat ('"whole milk" is the most frequently bought item, it has a support of about 0.2555, count of 2513.')
+```
+####"whole milk" is the most frequently bought item, it has a support of about 0.2555, count of 2513.
+
+###(iv) Which item is the least frequently bought and what is its frequency?
+```{r}
+inspect(sort(f_is, decreasing = F, by="count"))
+```
+###"rubbing alcohol" is (tied) the least frequently bought item, it has a support of 0.001016777, count of 10.
+
+###(v) What are the top 5 rules, sorted by support?
+```{r}
+inspect(head(rules_1, by = "support",5))
+```
+
+###(vi) What are the top 5 rules, sorted by confidence?
+```{r}
+inspect(head(rules_1, by = "confidence",5))
+```
+
+###(vii) What are the bottom 5 rules, sorted by support?
+
+```{r}
+inspect(tail(rules_1, by = "support",5))
+```
+###(viii) What are the bottom 5 rules, sorted by confidence?
+```{r}
+
+inspect(tail(rules_1, by = "confidence",5))
+```
+
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+
+Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Ctrl+Shift+Enter*. 
+
+```{r}
+plot(cars)
+```
+
+Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Ctrl+Alt+I*.
+
+When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Ctrl+Shift+K* to preview the HTML file).
+
+The preview shows you a rendered HTML copy of the contents of the editor. Consequently, unlike *Knit*, *Preview* does not run any R code chunks. Instead, the output of the chunk when it was last run in the editor is displayed.

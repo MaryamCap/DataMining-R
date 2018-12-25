@@ -1,0 +1,370 @@
+---
+Name: Maryam Heidarimoheb
+title: "Project-3"
+output: html_notebook
+---
+
+
+
+
+```{r}
+library(psych)
+library(rpart)
+library(caret)
+library(rpart.plot)
+library(ROCR)
+library(e1071)
+library(arules)
+library(factoextra)
+library(cluster)
+library(data.table)
+library(curl)
+```
+
+
+```{r}
+
+
+```
+```{r}
+setwd("D:/DataMiningProject")
+animal <- read.csv(file='Mammals.csv', header=TRUE, sep=";")
+str(animal)
+
+
+```
+##### 2.1.A)Data Cleanup:
+
+
+```{r}
+
+animal$Name <- NULL
+animal
+
+```
+
+##### 2.1.A.i) Because the name is unique we have to omit that.
+ 
+##### 2.1.A.ii)  No, data doesn't need to be standardized because it is a well defined dataset. 
+
+##### 2.1.A.iii) The cleaned data set add to archive.
+
+
+##### 2.1.B.i)
+```{r}
+fviz_nbclust(animal,kmeans,method="wss")
+```
+#### by running the WSS or Silhouette graph I took 5 clusters 
+
+##### 2.1.B.ii)
+```{r}
+k <- kmeans(animal, center = 5,nstart = 25)
+fviz_cluster(k,data = animal)
+```
+
+
+##### 2.1.B.iii)
+
+```{r}
+#rint(k)
+
+#sse_5 = kmeans(animal, centers= 5)$tot.withinss
+k$size
+#total_sse = ( sse_5)
+```
+
+#### Number of observations in each cluster is  20, 19, 1, 11, 15. 
+#### however every time we run kmeans, maybe you get different cluster size with a little difference.
+     
+##### 2.1.B.iv) 
+```{r}
+k$tot.withinss
+#print(total_sse)
+```
+
+#####Total SSE of clusters is 118.2843. 
+
+
+##### 2.1.B.v) 
+```{r}
+k$withinss
+
+```
+
+##### 2.1.B.vi) 
+```{r}
+which(k$cluster == 1)
+which(k$cluster == 2)
+which(k$cluster == 3)
+which(k$cluster == 4)
+which(k$cluster == 5)
+```
+#####Incisors, canines and premolars categories of the mammals are  grouped together in different clusters with similarities and non similarities in them. 
+##### in cluster one, Mink is part of the family Mustelidae which also includes weasels, otters and ferrets.Phocidae mamals from Felidae family like Jaguar and mammals from Otariidae family like sea lions.
+##### in cluster two, there is more similarity between mammals like bat, mouse, rat family.
+##### As you see in index 12 in cleaned data set, "Armadillo" has zero values for six of attributes:  0 0 0 0 0 0 8 8
+##### this is the cluster number 3 in above image with one attribute.
+##### Cluster 4 with indexex(9 10 58 59 60 61 62 63 64 65 66) has mammals from deer and Ox family except indexes 9 and 10 which is from bat category.
+##### in cluster 5, we have mammals from Talpidae family and bat family and wolf family
+
+
+
+##### 2.2)
+
+```{r}
+library(dplyr)
+set.seed(1122)
+setwd("D:/DataMiningProject")
+animal <- read.csv(file='Mammals2.csv', header=TRUE, sep=";", row.names = 1)
+#animal <- animal[-c(6,7,8)]
+animal_index = sample(nrow(animal), 35)
+animal3 <- animal[c(animal_index),]
+summary(animal3)
+```
+
+##### 2.2.A)
+```{r}
+#Try hiearchical clustering using single mode
+hc.single <- eclust(animal3,"hclust", hc_method="single")
+fviz_dend(hc.single, show_labels=T , palette="jco")
+
+
+
+```
+```{r}
+#Try hiearchical clustering using complete mode 
+hc.complete <- eclust(animal3,"hclust", hc_method="complete")
+fviz_dend(hc.complete, show_labels=T , palette="jco")
+
+```
+
+```{r}
+#Try hiearchical clustering using average mode
+hc.average <- eclust(animal3,"hclust", hc_method="average")
+fviz_dend(hc.average)
+#plot(hc.average)
+#abline(h=2)
+
+```
+
+#####buttom up clustering continuesly join together, smaller cluster to make bigger cluster, eventully you get to one big cluster. complete shows how close two cluster are and use larget pair wise distance between one point in one cluster and another point in another cluster. and small is smallest distance between one point in one cluster and another point in another cluster. and average is somewhere between small and complete
+
+
+##### 2.2.B)
+
+##### two-singleton clusters for Single mode: 
+#{"Groundhog","Prairie Dog"} , {Ocelot, Jaguar},{Silver hair bat, Lump nose bat},{Badger, Skunk}, {Elk, Reindeer} 
+
+##### two-singleton clusters for Complete mode:
+# {Ground hog, Prarie dog} {Racoon, Star nose mole}
+# {Sea lion, Elephant seal} {Ocelot, Jaguar}
+# {Badger, Skunk} {Elk, Reindeer} {Silver hair bat, Lump nose bat}
+# {Hoary bat, Pygmy bat}
+
+##### two-singleton clusters for average mode:
+# {Ground hog, Prarie dog} {Racoon, Star nose mole}
+# {Sea lion, Elephant seal} {Ocelot, Jaguar}
+# {Badger, Skunk} {Elk, Reindeer} {Silver hair bat, Lump nose bat}
+# {Hoary bat, Pygmy bat}
+
+
+##### 2.2.C)
+##### Single linkage strategy that produces the least two-singleton clusters would be considered pure 
+
+##### 2.2.D)
+
+```{r}
+library(cluster)
+library(factoextra)
+
+hc_single_new <- eclust(animal3,"hclust", hc_method="single")
+plot(hc_single_new)
+abline(h=2)
+```
+#####  There is 5 clusters in height 2
+
+
+##### 2.2.E)
+```{r}
+hc_complete_new <- eclust(animal3,"hclust", hc_method="complete", k=5)
+fviz_dend(hc_complete_new, show_labels=T , palette="jco")
+```
+
+
+```{r}
+hc_single_new <- eclust(animal3,"hclust", hc_method="single", k=5)
+fviz_dend(hc_single_new, show_labels=T , palette="jco")
+```
+
+
+```{r}
+hc_average_new <- eclust(animal3,"hclust", hc_method="average", k=5)
+fviz_dend(hc_average_new, show_labels=T , palette="jco")
+
+```
+
+#####2.2.F)
+```{r}
+library(factoextra)
+library(fpc)
+
+
+stats <- cluster.stats(dist(animal3),hc_complete_new$cluster)
+stats$dunn;stats$avg.silwidth;
+
+stats <- cluster.stats(dist(animal3),hc_single_new$cluster)
+stats$dunn;stats$avg.silwidth;
+
+stats <- cluster.stats(dist(animal3),hc_average_new$cluster)
+stats$dunn;stats$avg.silwidth;
+
+```
+#####The silhouette width, Si, lies in the interval [-1,1] and should be maximized.Large Si near to 1 means observations are well clustered and small silhouette width means observations lies between two clusters.here single is better than others but still not very large so observation lies between two clusters.
+
+
+##### 2.3.A)
+```{r}
+library(psych)
+library(rpart)
+library(caret)
+library(rpart.plot)
+library(ROCR)
+library(e1071)
+library(arules)
+library(factoextra)
+library(cluster)
+library(data.table)
+library(curl)
+
+setwd("D:/DataMiningProject")
+pulsar  <- read.csv(file='HTRU_2-small.csv', header=T, sep=",")
+new_scale <- scale(pulsar[,1:8])
+pulsar_pca_1<-prcomp(new_scale, scale=T, center = T)
+summary(pulsar_pca_1)
+
+```
+
+##### 2.3.A.I)
+#####Cumulative Proportion for first two component is  0.7855
+
+
+##### 2.3.A.II)
+
+```{r}
+plot(pulsar_pca_1$x,col = c("red", "blue")[factor(pulsar$class)])
+legend("topright",legend = c("0","1"), pch = c(21,21),pt.bg=c("red","blue"))
+
+```
+##### 2.3.A.III)
+##### based on the above image observation with lable 0 are more than observation with lable 1 and as you see, it is more dense for lable 0
+
+
+##### 2.3.B.I)
+
+```{r}
+
+k_2 <- kmeans(new_scale, center = 2,nstart = 25)
+fviz_cluster(k_2,data = new_scale)
+```
+
+##### 2.3.B.II) Provide observations on the shape of the clusters you got in (b)(i) to the plot of the first two principal
+##### components in (a)(ii). If the clusters are are similar, why? If they are not, why?
+
+##### THey are similar becuse PCA used the pattern based on first two component which has more Cumulative Proportion
+
+
+
+##### 2.3.B.III)
+```{r}
+k_2$size
+#k_2$betweenss/k_2$totss
+```
+##### Observation for Cluster one is 1153, and Observation for Cluster two is 8847
+
+##### 2.3.B.iv) What is the distribution of the classes in the HTRU2 dataset? 
+```{r}
+pulsar_num <- pulsar[,9]
+as.data.frame(table(pulsar_num))
+```
+
+##### 2.3.B.v) cluster with label zero corresponds to majority of classes and cluster with label one corresponds to minority of classes.
+
+##### 2.3.B.vi)
+```{r}
+new_num_cluster <- pulsar[which(k_2$cluster == 2),]
+new_pulsar_num <- new_num_cluster[,9]
+as.data.frame(table(new_pulsar_num))
+```
+
+##### 2.3.B.vii)class zero the larger cluster represents
+
+
+##### 2.3.B.viii) How much variance is explained by the clustering?
+```{r}
+k_2$betweenss/k_2$totss
+```
+
+##### 2.3.B.ix) What is the average Silhouette width of both the clusters?
+```{r}
+
+new_stats <- cluster.stats(dist(new_scale),k_2$cluster)
+
+```
+```{r}
+new_stats$avg.silwidth
+```
+
+##### 2.3.B.x) What is the per cluster Silhouette width? Based on this, which cluster is good?
+
+```{r}
+new_stats$clus.avg.silwidth
+```
+##### cluster one has a larger Silhouette width (0.6592013), so it is better 
+
+
+##### 2.3.C.I)
+
+```{r}
+
+k_pca <- kmeans(pulsar_pca_1$x[,1:2], centers = 2,nstart = 25)
+fviz_cluster(k_pca,data = pulsar_pca_1$x[,1:2])
+
+```
+##### 2.3.C.ii) What is the average Silhouette width of both the clusters?
+```{r}
+
+library(fpc)
+new_stats_pca <- cluster.stats(dist(pulsar_pca_1$x[,1:2]),k_pca$cluster)
+
+```
+
+
+```{r}
+new_stats_pca $avg.silwidth
+```
+
+##### 2.3.C.iii) What is the per cluster Silhouette width? Based on this, which cluster is good?
+```{r}
+new_stats_pca $clus.avg.silwidth
+```
+
+
+##### 2.3.C.iv) How do the values of c(ii) and c(iii) compare with those of b(ix) and b(x), respectively?
+
+##### The average Silhouette width of both the clusters  in b(ix) is 0.60 and in c(ii) is 0.68 which is larger and much better than b(ix)
+##### The per cluster Silhouette width in c(iii) are 0.7003259, 0.4489076 respectively for each cluset and in b(x) are 0.6592013, 0.1516389 respectively for each cluster and as you see in Silhouette width in c(iii) larger and better than b(x) per cluster.
+
+
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+
+Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Ctrl+Shift+Enter*. 
+
+```{r}
+plot(cars)
+```
+
+Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Ctrl+Alt+I*.
+
+When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Ctrl+Shift+K* to preview the HTML file).
+
+The preview shows you a rendered HTML copy of the contents of the editor. Consequently, unlike *Knit*, *Preview* does not run any R code chunks. Instead, the output of the chunk when it was last run in the editor is displayed.
